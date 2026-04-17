@@ -1,0 +1,355 @@
+-- ==========================================
+-- TRACKING DE LÍMITES - SISTEMA COMPLETO
+-- ==========================================
+
+-- 1) Actualizar tabla plans_features con TODOS los límites
+DROP TABLE IF EXISTS public.plans_features CASCADE;
+
+CREATE TABLE public.plans_features (
+  plan TEXT PRIMARY KEY CHECK (plan IN ('basico','medio','premium')),
+  
+  -- Features habilitadas
+  voice BOOLEAN DEFAULT false,
+  crm BOOLEAN DEFAULT false,
+  seguimiento BOOLEAN DEFAULT false,
+  no_show BOOLEAN DEFAULT false,
+  reactivacion BOOLEAN DEFAULT false,
+  agenda BOOLEAN DEFAULT false,
+  
+  -- LÍMITES POR RECURSO (lo nuevo 🔥)
+  max_interactions_mes INT DEFAULT 500,
+  max_voice_minutes_mes INT DEFAULT 0,        -- Minutos de VOZ (TX + TTS)
+  max_images_mes INT DEFAULT 0,                -- Análisis de imágenes
+  max_videos_mes INT DEFAULT 0,                -- Análisis de videos
+  
+  -- Umbrales de advertencia (%)
+  warning_threshold INT DEFAULT 80,            -- Alerta al 80%
+  critical_threshold INT DEFAULT 95,           -- Alerta crítica al 95%
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Configuración por plan (AJUSTA SEGÚN TUS COSTOS)
+INSERT INTO public.plans_features (
+  plan, voice, crm, seguimiento, no_show, reactivacion, agenda,
+  max_interactions_mes, max_voice_minutes_mes, max_images_mes, max_videos_mes
+) VALUES
+  -- BÁSICO: Solo texto + imágenes limitadas
+  ('basico', false, false, false, false, false, false, 
+   500, 0, 20, 0),
+  
+  -- MEDIO: + Voz limitada + Videos limitados
+  ('medio', true, true, false, false, false, true, 
+   2000, 30, 100, 10),
+  
+  -- PREMIUM: Límites altos
+  ('premium', true, true, true, true, true, true, 
+   10000, 200, 500, 50)
+ON CONFLICT (plan) DO UPDATE SET
+  max_voice_minutes_mes = EXCLUDED.max_voice_minutes_mes,
+  max_images_mes = EXCLUDED.max_images_mes,
+  max_videos_mes = EXCLUDED.max_videos_mes;
+
+-- ==========================================
+-- 2) Tabla de USAGE mensual (lo crítico 🔥)
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS public.monthly_usage (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  month DATE NOT NULL, -- Primer día del mes (2026-04-01)
+  
+  -- Contadores de uso
+  interactions_count INT DEFAULT 0,
+  voice_minutes_used DECIMAL(10,2) DEFAULT 0.0,  -- Acumulado TX + TTS
+  images_count INT DEFAULT 0,
+  videos_count INT DEFAULT 0,
+  
+  -- Metadata
+  last_updated TIMESTAMPTZ DEFAULT NOW(),
+  
+  UNIQUE(client_id, month)
+);
+
+CREATE INDEX idx_monthly_usage_client_month ON public.monthly_usage(client_id, month);
+
+-- ==========================================
+-- 3) Tabla de ALERTAS enviadas
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS public.usage_alerts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id UUID REFERENCES clients(id),
+  resource_type TEXT CHECK (resource_type IN ('interactions', 'voice', 'images', 'videos')),
+  alert_type TEXT CHECK (alert_type IN ('warning', 'critical', 'exceeded')),
+  usage_percentage INT,
+  message TEXT,
+  sent_at TIMESTAMPTZ DEFAULT NOW(),
+  acknowledged BOOLEAN DEFAULT false
+);
+
+-- ==========================================
+-- 4) FUNCIÓN: Verificar límite ANTES de usar
+-- ==========================================
+
+CREATE OR REPLACE FUNCTION public.check_resource_limit(
+  p_client_id UUID,
+  p_resource_type TEXT, -- 'interaction', 'voice', 'image', 'video'
+  p_amount DECIMAL DEFAULT 1.0 -- Para voz: minutos, otros: cantidad
+) RETURNS JSONB AS $$
+DECLARE
+  v_plan TEXT;
+  v_limit INT;
+  v_current DECIMAL;
+  v_new_total DECIMAL;
+  v_percentage INT;
+  v_month DATE;
+BEGIN
+  -- Obtener mes actual
+  v_month := DATE_TRUNC('month', CURRENT_DATE);
+  
+  -- Obtener plan y límite
+  SELECT c.plan,
+         CASE p_resource_type
+           WHEN 'interaction' THEN pf.max_interactions_mes
+           WHEN 'voice' THEN pf.max_voice_minutes_mes
+           WHEN 'image' THEN pf.max_images_mes
+           WHEN 'video' THEN pf.max_videos_mes
+         END
+  INTO v_plan, v_limit
+  FROM clients c
+  JOIN plans_features pf ON c.plan = pf.plan
+  WHERE c.id = p_client_id;
+  
+  -- Si el límite es 0, feature no disponible
+  IF v_limit = 0 THEN
+    RETURN jsonb_build_object(
+      'allowed', false,
+      'reason', 'feature_not_available',
+      'message', 'Esta funcionalidad no está disponible en tu plan ' || v_plan,
+      'upgrade_required', true
+    );
+  END IF;
+  
+  -- Obtener uso actual (crear registro si no existe)
+  INSERT INTO monthly_usage (client_id, month)
+  VALUES (p_client_id, v_month)
+  ON CONFLICT (client_id, month) DO NOTHING;
+  
+  SELECT 
+    CASE p_resource_type
+      WHEN 'interaction' THEN interactions_count
+      WHEN 'voice' THEN voice_minutes_used
+      WHEN 'image' THEN images_count
+      WHEN 'video' THEN videos_count
+    END
+  INTO v_current
+  FROM monthly_usage
+  WHERE client_id = p_client_id AND month = v_month;
+  
+  -- Calcular nuevo total y porcentaje
+  v_new_total := v_current + p_amount;
+  v_percentage := ROUND((v_new_total / v_limit::DECIMAL) * 100);
+  
+  -- Verificar si excede límite
+  IF v_new_total > v_limit THEN
+    RETURN jsonb_build_object(
+      'allowed', false,
+      'reason', 'limit_exceeded',
+      'message', 'Has alcanzado el límite mensual de ' || v_limit || ' para ' || p_resource_type,
+      'current', v_current,
+      'limit', v_limit,
+      'percentage', v_percentage,
+      'upgrade_required', true
+    );
+  END IF;
+  
+  -- Todo OK
+  RETURN jsonb_build_object(
+    'allowed', true,
+    'current', v_current,
+    'new_total', v_new_total,
+    'limit', v_limit,
+    'percentage', v_percentage,
+    'remaining', v_limit - v_new_total
+  );
+END;
+$$ LANGUAGE plpgsql;
+
+-- ==========================================
+-- 5) FUNCIÓN: Registrar uso DESPUÉS de usar
+-- ==========================================
+
+CREATE OR REPLACE FUNCTION public.record_resource_usage(
+  p_client_id UUID,
+  p_resource_type TEXT,
+  p_amount DECIMAL DEFAULT 1.0,
+  p_metadata JSONB DEFAULT '{}'
+) RETURNS JSONB AS $$
+DECLARE
+  v_month DATE;
+  v_new_total DECIMAL;
+  v_limit INT;
+  v_percentage INT;
+  v_warning_threshold INT;
+  v_critical_threshold INT;
+  v_should_alert BOOLEAN := false;
+  v_alert_type TEXT;
+BEGIN
+  v_month := DATE_TRUNC('month', CURRENT_DATE);
+  
+  -- Actualizar contador según tipo
+  UPDATE monthly_usage
+  SET 
+    interactions_count = CASE WHEN p_resource_type = 'interaction' 
+                              THEN interactions_count + p_amount::INT ELSE interactions_count END,
+    voice_minutes_used = CASE WHEN p_resource_type = 'voice' 
+                              THEN voice_minutes_used + p_amount ELSE voice_minutes_used END,
+    images_count = CASE WHEN p_resource_type = 'image' 
+                        THEN images_count + p_amount::INT ELSE images_count END,
+    videos_count = CASE WHEN p_resource_type = 'video' 
+                        THEN videos_count + p_amount::INT ELSE videos_count END,
+    last_updated = NOW()
+  WHERE client_id = p_client_id AND month = v_month
+  RETURNING 
+    CASE p_resource_type
+      WHEN 'interaction' THEN interactions_count
+      WHEN 'voice' THEN voice_minutes_used
+      WHEN 'image' THEN images_count
+      WHEN 'video' THEN videos_count
+    END
+  INTO v_new_total;
+  
+  -- Obtener límite y umbrales
+  SELECT 
+    CASE p_resource_type
+      WHEN 'interaction' THEN pf.max_interactions_mes
+      WHEN 'voice' THEN pf.max_voice_minutes_mes
+      WHEN 'image' THEN pf.max_images_mes
+      WHEN 'video' THEN pf.max_videos_mes
+    END,
+    pf.warning_threshold,
+    pf.critical_threshold
+  INTO v_limit, v_warning_threshold, v_critical_threshold
+  FROM clients c
+  JOIN plans_features pf ON c.plan = pf.plan
+  WHERE c.id = p_client_id;
+  
+  -- Calcular porcentaje
+  v_percentage := ROUND((v_new_total / v_limit::DECIMAL) * 100);
+  
+  -- Determinar si debe alertar
+  IF v_percentage >= v_critical_threshold THEN
+    v_should_alert := true;
+    v_alert_type := 'critical';
+  ELSIF v_percentage >= v_warning_threshold THEN
+    v_should_alert := true;
+    v_alert_type := 'warning';
+  END IF;
+  
+  -- Crear alerta si es necesario (solo una vez por umbral)
+  IF v_should_alert THEN
+    INSERT INTO usage_alerts (client_id, resource_type, alert_type, usage_percentage, message)
+    SELECT 
+      p_client_id,
+      p_resource_type,
+      v_alert_type,
+      v_percentage,
+      'Has usado ' || v_percentage || '% de tu límite mensual de ' || p_resource_type
+    WHERE NOT EXISTS (
+      SELECT 1 FROM usage_alerts
+      WHERE client_id = p_client_id
+        AND resource_type = p_resource_type
+        AND alert_type = v_alert_type
+        AND sent_at > DATE_TRUNC('month', CURRENT_DATE)
+        AND acknowledged = false
+    );
+  END IF;
+  
+  RETURN jsonb_build_object(
+    'success', true,
+    'new_total', v_new_total,
+    'limit', v_limit,
+    'percentage', v_percentage,
+    'alert_triggered', v_should_alert,
+    'alert_type', v_alert_type
+  );
+END;
+$$ LANGUAGE plpgsql;
+
+-- ==========================================
+-- 6) FUNCIÓN: Obtener alertas pendientes
+-- ==========================================
+
+CREATE OR REPLACE FUNCTION public.get_pending_alerts(
+  p_client_id UUID
+) RETURNS TABLE (
+  id UUID,
+  resource_type TEXT,
+  alert_type TEXT,
+  usage_percentage INT,
+  message TEXT,
+  sent_at TIMESTAMPTZ
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT a.id, a.resource_type, a.alert_type, a.usage_percentage, a.message, a.sent_at
+  FROM usage_alerts a
+  WHERE a.client_id = p_client_id
+    AND a.acknowledged = false
+    AND a.sent_at > DATE_TRUNC('month', CURRENT_DATE)
+  ORDER BY a.sent_at DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ==========================================
+-- 7) FUNCIÓN: Resetear uso mensual (Cron)
+-- ==========================================
+
+CREATE OR REPLACE FUNCTION public.reset_monthly_usage()
+RETURNS void AS $$
+BEGIN
+  -- Archivar mes anterior (opcional)
+  -- INSERT INTO monthly_usage_archive SELECT * FROM monthly_usage WHERE month < DATE_TRUNC('month', CURRENT_DATE);
+  
+  -- Limpiar alertas del mes pasado
+  DELETE FROM usage_alerts 
+  WHERE sent_at < DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month';
+  
+  -- Nota: monthly_usage se crea automáticamente cuando se usa
+  -- No necesitamos borrar, cada mes tiene su registro
+END;
+$$ LANGUAGE plpgsql;
+
+-- ==========================================
+-- 8) VISTA: Dashboard de uso
+-- ==========================================
+
+CREATE OR REPLACE VIEW public.usage_dashboard AS
+SELECT 
+  c.id AS client_id,
+  c.name AS client_name,
+  c.plan,
+  pf.max_interactions_mes,
+  pf.max_voice_minutes_mes,
+  pf.max_images_mes,
+  pf.max_videos_mes,
+  COALESCE(mu.interactions_count, 0) AS interactions_used,
+  COALESCE(mu.voice_minutes_used, 0) AS voice_minutes_used,
+  COALESCE(mu.images_count, 0) AS images_used,
+  COALESCE(mu.videos_count, 0) AS videos_used,
+  ROUND((COALESCE(mu.interactions_count, 0)::DECIMAL / NULLIF(pf.max_interactions_mes, 0)) * 100) AS interactions_pct,
+  ROUND((COALESCE(mu.voice_minutes_used, 0) / NULLIF(pf.max_voice_minutes_mes, 0)) * 100) AS voice_pct,
+  ROUND((COALESCE(mu.images_count, 0)::DECIMAL / NULLIF(pf.max_images_mes, 0)) * 100) AS images_pct,
+  ROUND((COALESCE(mu.videos_count, 0)::DECIMAL / NULLIF(pf.max_videos_mes, 0)) * 100) AS videos_pct,
+  mu.last_updated
+FROM clients c
+JOIN plans_features pf ON c.plan = pf.plan
+LEFT JOIN monthly_usage mu ON c.id = mu.client_id AND mu.month = DATE_TRUNC('month', CURRENT_DATE)
+WHERE c.active = true;
+
+-- Permisos
+GRANT SELECT ON public.usage_dashboard TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.check_resource_limit TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.record_resource_usage TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.get_pending_alerts TO anon, authenticated, service_role;

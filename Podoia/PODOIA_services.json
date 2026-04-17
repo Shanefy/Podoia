@@ -1,0 +1,242 @@
+{
+  "name": "PODOIA - Services",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## PODOIA_services — Catálogo de servicios\n\nLlamado por el Agente IA como herramienta.\n\n**Input:** { client_id, query }\n**Output:** { found, services[], formatted }\n\n**Tabla Supabase:** services\n(id, client_id, name, price, duration_minutes, is_active)\n\n**Regla:** Solo lee datos. Nunca modifica.",
+        "height": 220,
+        "width": 500,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -360,
+        -80
+      ],
+      "id": "f68f05b0-2529-4c65-8c1f-967e5d9bd764",
+      "name": "Nota"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ],
+      "id": "c7a46851-48fd-4383-8b02-c827afdd339b",
+      "name": "Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst input = $json.query ? (typeof $json.query === 'string' ? (() => { try { return JSON.parse($json.query); } catch(e) { return $json; } })() : $json.query) : $json;\nreturn [{ json: {\n  client_id: input.client_id || $json.client_id || '',\n  query: (input.query || $json.query || '').toLowerCase().trim()\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        200
+      ],
+      "id": "1f8b2fa0-9887-4c70-a987-6c6de31f47b9",
+      "name": "Parsear Input"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://CAMBIAR-URL.supabase.co/rest/v1/services?client_id=eq.{{ $json.client_id }}&is_active=eq.true&select=id,name,price,duration_minutes&order=name",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "CAMBIAR-SUPABASE-ANON-KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        200
+      ],
+      "id": "f0911954-cb62-4a56-bcae-d834d47952db",
+      "name": "Buscar Servicios",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CAMBIAR",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "06363879-8dce-4771-b1ad-24e004eb8ec2",
+              "leftValue": "={{ Array.isArray($json) && $json.length > 0 }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        200
+      ],
+      "id": "9e91a462-e064-4779-80a2-210ae0bde82f",
+      "name": "Hay Servicios?"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst q = $('Parsear Input').item.json.query || '';\nlet services = Array.isArray($json) ? $json : [$json];\n// Filter by query if provided (simple includes match)\nif (q.length > 2) {\n  const filtered = services.filter(s => s.name.toLowerCase().includes(q));\n  if (filtered.length > 0) services = filtered;\n}\nconst formatted = services.map(s => {\n  const price = s.price ? `R$${Number(s.price).toFixed(2)}` : 'consultar';\n  const dur = s.duration_minutes ? `${s.duration_minutes} min` : '';\n  return `- ${s.name}: ${price}${dur ? ' ('+dur+')' : ''}`;\n}).join('\\n');\nreturn [{ json: {\n  found: true,\n  count: services.length,\n  services: services,\n  formatted: `Serviços disponíveis:\\n${formatted}`\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        120
+      ],
+      "id": "fea83f8c-54ea-4607-972e-fa582bd5f02f",
+      "name": "Formatear Servicios"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn [{ json: {\n  found: false,\n  count: 0,\n  services: [],\n  formatted: 'No encontramos servicios configurados. Por favor consulte directamente con la clínica.'\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        280
+      ],
+      "id": "af221059-28ff-4d61-9bba-83533fbecca4",
+      "name": "Sin Servicios"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        200
+      ],
+      "id": "b6dfeccc-604e-40a4-8ccc-93bc0342731c",
+      "name": "Merge Servicios"
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parsear Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Input": {
+      "main": [
+        [
+          {
+            "node": "Buscar Servicios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Servicios": {
+      "main": [
+        [
+          {
+            "node": "Hay Servicios?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hay Servicios?": {
+      "main": [
+        [
+          {
+            "node": "Formatear Servicios",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sin Servicios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatear Servicios": {
+      "main": [
+        [
+          {
+            "node": "Merge Servicios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sin Servicios": {
+      "main": [
+        [
+          {
+            "node": "Merge Servicios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "instanceId": "podoia-services-v1"
+  }
+}

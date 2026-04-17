@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PodoIA — Dashboard del Podólogo</title>
+<style>
+:root {
+  --sidebar-w: 220px;
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f5f2;
+  --color-background-tertiary: #efede6;
+  --color-text-primary: #1a1a18;
+  --color-text-secondary: #5f5e5a;
+  --color-text-tertiary: #888780;
+  --color-border-tertiary: rgba(0,0,0,0.12);
+  --color-border-secondary: rgba(0,0,0,0.22);
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background-primary: #1e1e1c;
+    --color-background-secondary: #2a2a28;
+    --color-background-tertiary: #141413;
+    --color-text-primary: #f0ede6;
+    --color-text-secondary: #b4b2a9;
+    --color-text-tertiary: #888780;
+    --color-border-tertiary: rgba(255,255,255,0.1);
+    --color-border-secondary: rgba(255,255,255,0.2);
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); background: var(--color-background-tertiary); }
+
+.layout { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: var(--sidebar-w); background: var(--color-background-primary);
+  border-right: 0.5px solid var(--color-border-tertiary);
+  padding: 1.25rem 0; display: flex; flex-direction: column; flex-shrink: 0;
+}
+.sidebar-logo { padding: 0 1.25rem 1.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 0.75rem; }
+.logo-badge { display: flex; align-items: center; gap: 8px; }
+.logo-icon { width: 32px; height: 32px; background: #1D9E75; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.logo-icon svg { width: 18px; height: 18px; fill: white; }
+.logo-text { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+.logo-sub { font-size: 11px; color: var(--color-text-secondary); margin-top: 1px; }
+
+.nav-section { padding: 0 0.75rem; margin-bottom: 0.25rem; }
+.nav-label { font-size: 10px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.08em; padding: 0.5rem 0.5rem 0.25rem; }
+.nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--border-radius-md); cursor: pointer; font-size: 13px; color: var(--color-text-secondary); transition: background 0.1s; margin-bottom: 1px; }
+.nav-item:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+.nav-item.active { background: #E1F5EE; color: #0F6E56; font-weight: 500; }
+.nav-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+.sidebar-footer { margin-top: auto; padding: 1rem 1.25rem 0; border-top: 0.5px solid var(--color-border-tertiary); }
+.plan-badge { background: #E1F5EE; border: 0.5px solid #9FE1CB; border-radius: var(--border-radius-md); padding: 8px 10px; }
+.plan-badge-label { font-size: 10px; color: #0F6E56; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+.plan-badge-name { font-size: 13px; font-weight: 500; color: #085041; margin-top: 1px; }
+.plan-badge-price { font-size: 11px; color: #0F6E56; margin-top: 2px; }
+
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.topbar { background: var(--color-background-primary); border-bottom: 0.5px solid var(--color-border-tertiary); padding: 0.875rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+.topbar-left h1 { font-size: 16px; font-weight: 500; color: var(--color-text-primary); }
+.topbar-left p { font-size: 12px; color: var(--color-text-secondary); margin-top: 1px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.period-select { font-size: 12px; padding: 5px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-primary); cursor: pointer; }
+.avatar { width: 30px; height: 30px; border-radius: 50%; background: #1D9E75; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: white; }
+
+.content { padding: 1.25rem 1.5rem; flex: 1; }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1.25rem; }
+.kpi-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.1rem; cursor: pointer; transition: border-color 0.15s; }
+.kpi-card:hover { border-color: var(--color-border-secondary); }
+.kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.kpi-label { font-size: 11px; color: var(--color-text-secondary); font-weight: 500; }
+.kpi-icon { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+.kpi-value { font-size: 24px; font-weight: 500; color: var(--color-text-primary); line-height: 1; }
+.kpi-delta { font-size: 11px; margin-top: 4px; display: flex; align-items: center; gap: 3px; }
+.kpi-delta.up { color: #0F6E56; }
+.kpi-delta.down { color: #993C1D; }
+.kpi-delta.neutral { color: var(--color-text-tertiary); }
+
+.mid-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 1.25rem; }
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); }
+.card-header { padding: 0.875rem 1.1rem 0.625rem; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+.card-subtitle { font-size: 11px; color: var(--color-text-secondary); margin-top: 1px; }
+.card-body { padding: 1rem 1.1rem; }
+
+.chart-wrap { position: relative; width: 100%; height: 180px; }
+
+.status-list { display: flex; flex-direction: column; gap: 8px; }
+.status-row { display: flex; align-items: center; gap: 8px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.status-name { font-size: 12px; color: var(--color-text-secondary); flex: 1; }
+.status-bar-wrap { flex: 2; height: 5px; background: var(--color-background-secondary); border-radius: 3px; overflow: hidden; }
+.status-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+.status-count { font-size: 12px; font-weight: 500; color: var(--color-text-primary); min-width: 28px; text-align: right; }
+
+.bottom-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; }
+
+.cita-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.cita-row:last-child { border-bottom: none; }
+.cita-time { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); min-width: 40px; }
+.cita-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; flex-shrink: 0; }
+.cita-info { flex: 1; min-width: 0; }
+.cita-name { font-size: 12px; font-weight: 500; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cita-treat { font-size: 10px; color: var(--color-text-tertiary); }
+.cita-badge { font-size: 10px; padding: 2px 7px; border-radius: 100px; font-weight: 500; flex-shrink: 0; }
+
+.autoflow-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.autoflow-item:last-child { border-bottom: none; }
+.autoflow-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.autoflow-title { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+.autoflow-desc { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+.autoflow-meta { font-size: 10px; color: var(--color-text-tertiary); margin-top: 2px; }
+
+.usage-row { margin-bottom: 12px; }
+.usage-row:last-child { margin-bottom: 0; }
+.usage-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+.usage-label span:last-child { font-weight: 500; color: var(--color-text-primary); }
+.usage-bar { height: 5px; background: var(--color-background-secondary); border-radius: 3px; overflow: hidden; }
+.usage-fill { height: 100%; border-radius: 3px; }
+
+.tab-row { display: flex; gap: 4px; }
+.tab-btn { font-size: 11px; padding: 3px 8px; border-radius: 5px; border: 0.5px solid transparent; cursor: pointer; background: none; color: var(--color-text-secondary); transition: all 0.1s; font-family: var(--font-sans); }
+.tab-btn.active { background: var(--color-background-secondary); border-color: var(--color-border-secondary); color: var(--color-text-primary); font-weight: 500; }
+
+.explore-btn { width: 100%; margin-top: 14px; font-size: 12px; padding: 7px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-primary); cursor: pointer; font-family: var(--font-sans); }
+.explore-btn:hover { background: var(--color-background-tertiary); }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-badge">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5c-1.4 0-2.5-1.1-2.5-2.5S10.6 6.5 12 6.5s2.5 1.1 2.5 2.5-1.1 2.5-2.5 2.5z"/></svg>
+        </div>
+        <div>
+          <div class="logo-text">PodoIA</div>
+          <div class="logo-sub">Panel del podólogo</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Principal</div>
+      <div class="nav-item active" onclick="setActive(this)"><span class="nav-dot" style="background:#1D9E75"></span> Resumen</div>
+      <div class="nav-item" onclick="setActive(this)"><span class="nav-dot" style="background:#3266ad"></span> Citas</div>
+      <div class="nav-item" onclick="setActive(this)"><span class="nav-dot" style="background:#7F77DD"></span> Pacientes</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Automatización</div>
+      <div class="nav-item" onclick="setActive(this)"><span class="nav-dot" style="background:#BA7517"></span> Flujos activos</div>
+      <div class="nav-item" onclick="setActive(this)"><span class="nav-dot" style="background:#5DCAA5"></span> WhatsApp</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Cuenta</div>
+      <div class="nav-item" onclick="setActive(this)"><span class="nav-dot" style="background:#888780"></span> Uso del plan</div>
+      <div class="nav-item" onclick="setActive(this)"><span class="nav-dot" style="background:#888780"></span> Configuración</div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="plan-badge">
+        <div class="plan-badge-label">Plan activo</div>
+        <div class="plan-badge-name">Clínica Automatizada</div>
+        <div class="plan-badge-price">$4,500 MXN / mes</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 id="page-title">Resumen general</h1>
+        <p>Hola, Dr. García — hoy es jueves 16 de abril, 2026</p>
+      </div>
+      <div class="topbar-right">
+        <select class="period-select" id="period" onchange="updatePeriod()">
+          <option>Este mes</option>
+          <option>Semana actual</option>
+          <option>Mes anterior</option>
+        </select>
+        <div class="avatar">DG</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Pacientes totales</span>
+            <div class="kpi-icon" style="background:#E1F5EE"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0F6E56"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+          </div>
+          <div class="kpi-value" id="k-pac">247</div>
+          <div class="kpi-delta up">▲ +18 este mes</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Citas agendadas</span>
+            <div class="kpi-icon" style="background:#E6F1FB"><svg width="14" height="14" viewBox="0 0 24 24" fill="#185FA5"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg></div>
+          </div>
+          <div class="kpi-value" id="k-citas">64</div>
+          <div class="kpi-delta up">▲ +12% vs mes ant.</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">No-shows</span>
+            <div class="kpi-icon" style="background:#FAECE7"><svg width="14" height="14" viewBox="0 0 24 24" fill="#993C1D"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div>
+          </div>
+          <div class="kpi-value" id="k-noshows">7</div>
+          <div class="kpi-delta down">▼ 10.9% tasa no-show</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">Ingresos estimados</span>
+            <div class="kpi-icon" style="background:#EAF3DE"><svg width="14" height="14" viewBox="0 0 24 24" fill="#3B6D11"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div>
+          </div>
+          <div class="kpi-value" id="k-ing">$38,400</div>
+          <div class="kpi-delta up">▲ +8% vs mes ant.</div>
+        </div>
+      </div>
+
+      <div class="mid-grid">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Citas por semana</div>
+              <div class="card-subtitle">Abril 2026</div>
+            </div>
+            <div class="tab-row">
+              <button class="tab-btn active" onclick="switchChart('citas', this)">Citas</button>
+              <button class="tab-btn" onclick="switchChart('noshows', this)">No-shows</button>
+              <button class="tab-btn" onclick="switchChart('nuevos', this)">Nuevos</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap">
+              <canvas id="mainChart" role="img" aria-label="Gráfica de barras con citas semanales de abril 2026. Semana 1: 14, Semana 2: 18, Semana 3: 16, Semana 4: 16.">Citas: S1=14, S2=18, S3=16, S4=16.</canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Estado de pacientes</div>
+              <div class="card-subtitle">Distribución actual</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap" style="height:150px; margin-bottom:12px;">
+              <canvas id="donutChart" role="img" aria-label="Gráfica de dona con distribución de pacientes: clientes 148, leads 67, inactivos 32.">Clientes: 148, Leads: 67, Inactivos: 32.</canvas>
+            </div>
+            <div class="status-list">
+              <div class="status-row">
+                <div class="status-dot" style="background:#1D9E75"></div>
+                <span class="status-name">Clientes activos</span>
+                <div class="status-bar-wrap"><div class="status-bar-fill" style="width:60%;background:#1D9E75"></div></div>
+                <span class="status-count">148</span>
+              </div>
+              <div class="status-row">
+                <div class="status-dot" style="background:#3266ad"></div>
+                <span class="status-name">Leads</span>
+                <div class="status-bar-wrap"><div class="status-bar-fill" style="width:27%;background:#3266ad"></div></div>
+                <span class="status-count">67</span>
+              </div>
+              <div class="status-row">
+                <div class="status-dot" style="background:#B4B2A9"></div>
+                <span class="status-name">Inactivos</span>
+                <div class="status-bar-wrap"><div class="status-bar-fill" style="width:13%;background:#B4B2A9"></div></div>
+                <span class="status-count">32</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-grid">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Citas de hoy</div>
+              <div class="card-subtitle">Jueves 16 de abril</div>
+            </div>
+            <div style="font-size:11px;color:#0F6E56;font-weight:500;background:#E1F5EE;padding:2px 8px;border-radius:100px;">8 citas</div>
+          </div>
+          <div class="card-body" style="padding:0.5rem 1.1rem;">
+            <div class="cita-row">
+              <span class="cita-time">09:00</span>
+              <div class="cita-avatar" style="background:#E1F5EE;color:#0F6E56">MA</div>
+              <div class="cita-info"><div class="cita-name">María Alvarado</div><div class="cita-treat">Uña encarnada</div></div>
+              <span class="cita-badge" style="background:#E1F5EE;color:#0F6E56">Confirmado</span>
+            </div>
+            <div class="cita-row">
+              <span class="cita-time">10:30</span>
+              <div class="cita-avatar" style="background:#E6F1FB;color:#185FA5">JR</div>
+              <div class="cita-info"><div class="cita-name">Juan Reyes</div><div class="cita-treat">Quiropodia</div></div>
+              <span class="cita-badge" style="background:#FAEEDA;color:#854F0B">Pendiente</span>
+            </div>
+            <div class="cita-row">
+              <span class="cita-time">12:00</span>
+              <div class="cita-avatar" style="background:#EEEDFE;color:#534AB7">LP</div>
+              <div class="cita-info"><div class="cita-name">Laura Pérez</div><div class="cita-treat">Pie diabético</div></div>
+              <span class="cita-badge" style="background:#E1F5EE;color:#0F6E56">Confirmado</span>
+            </div>
+            <div class="cita-row">
+              <span class="cita-time">14:00</span>
+              <div class="cita-avatar" style="background:#FAECE7;color:#993C1D">CG</div>
+              <div class="cita-info"><div class="cita-name">Carlos Gómez</div><div class="cita-treat">Onicomicosis</div></div>
+              <span class="cita-badge" style="background:#FAECE7;color:#993C1D">No confirmó</span>
+            </div>
+            <div class="cita-row">
+              <span class="cita-time">16:30</span>
+              <div class="cita-avatar" style="background:#EAF3DE;color:#3B6D11">SV</div>
+              <div class="cita-info"><div class="cita-name">Sofía Vargas</div><div class="cita-treat">Estudio biomec.</div></div>
+              <span class="cita-badge" style="background:#E1F5EE;color:#0F6E56">Confirmado</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Flujos automáticos</div>
+              <div class="card-subtitle">Activaciones del día</div>
+            </div>
+            <div style="font-size:11px;color:#0F6E56;font-weight:500;background:#E1F5EE;padding:2px 8px;border-radius:100px;">Activos</div>
+          </div>
+          <div class="card-body" style="padding:0.5rem 1.1rem;">
+            <div class="autoflow-item">
+              <div class="autoflow-icon" style="background:#FAEEDA"><svg width="14" height="14" viewBox="0 0 24 24" fill="#854F0B"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg></div>
+              <div><div class="autoflow-title">Recordatorio 24h</div><div class="autoflow-desc">5 mensajes enviados hoy</div><div class="autoflow-meta">Para citas de mañana</div></div>
+            </div>
+            <div class="autoflow-item">
+              <div class="autoflow-icon" style="background:#FAECE7"><svg width="14" height="14" viewBox="0 0 24 24" fill="#993C1D"><path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12 5.7 16.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4z"/></svg></div>
+              <div><div class="autoflow-title">Gestión no-shows</div><div class="autoflow-desc">2 pacientes detectados</div><div class="autoflow-meta">Mensaje reagendamiento enviado</div></div>
+            </div>
+            <div class="autoflow-item">
+              <div class="autoflow-icon" style="background:#EEEDFE"><svg width="14" height="14" viewBox="0 0 24 24" fill="#534AB7"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
+              <div><div class="autoflow-title">Seguimiento post-cita</div><div class="autoflow-desc">3 mensajes programados</div><div class="autoflow-meta">Citas de hace 2 días</div></div>
+            </div>
+            <div class="autoflow-item">
+              <div class="autoflow-icon" style="background:#E1F5EE"><svg width="14" height="14" viewBox="0 0 24 24" fill="#0F6E56"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div>
+              <div><div class="autoflow-title">Reactivación 30 días</div><div class="autoflow-desc">8 pacientes inactivos</div><div class="autoflow-meta">Campaña enviada hoy</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Uso del plan</div>
+              <div class="card-subtitle">Abril 2026 — Premium</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="usage-row">
+              <div class="usage-label"><span>Interacciones WhatsApp</span><span>3,240 / 10,000</span></div>
+              <div class="usage-bar"><div class="usage-fill" style="width:32%;background:#1D9E75"></div></div>
+            </div>
+            <div class="usage-row">
+              <div class="usage-label"><span>Minutos de voz</span><span>68 / 200 min</span></div>
+              <div class="usage-bar"><div class="usage-fill" style="width:34%;background:#3266ad"></div></div>
+            </div>
+            <div class="usage-row">
+              <div class="usage-label"><span>Imágenes analizadas</span><span>47 / 500</span></div>
+              <div class="usage-bar"><div class="usage-fill" style="width:9%;background:#7F77DD"></div></div>
+            </div>
+            <div class="usage-row">
+              <div class="usage-label"><span>Videos procesados</span><span>4 / 50</span></div>
+              <div class="usage-bar"><div class="usage-fill" style="width:8%;background:#BA7517"></div></div>
+            </div>
+            <div style="margin-top:16px;padding-top:12px;border-top:0.5px solid var(--color-border-tertiary);">
+              <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:8px;">Servicios activos</div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                <span style="font-size:10px;font-weight:500;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:100px;">CRM</span>
+                <span style="font-size:10px;font-weight:500;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:100px;">Agenda</span>
+                <span style="font-size:10px;font-weight:500;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:100px;">Voz</span>
+                <span style="font-size:10px;font-weight:500;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:100px;">No-shows</span>
+                <span style="font-size:10px;font-weight:500;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:100px;">Reactivación</span>
+                <span style="font-size:10px;font-weight:500;background:#E1F5EE;color:#0F6E56;padding:2px 8px;border-radius:100px;">Seguimiento</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const chartData = {
+  citas:   { labels: ['Sem 1','Sem 2','Sem 3','Sem 4'], data: [14,18,16,16], color: '#1D9E75', label: 'Citas' },
+  noshows: { labels: ['Sem 1','Sem 2','Sem 3','Sem 4'], data: [2,3,1,1],   color: '#D85A30', label: 'No-shows' },
+  nuevos:  { labels: ['Sem 1','Sem 2','Sem 3','Sem 4'], data: [4,7,4,3],   color: '#3266ad', label: 'Nuevos' },
+};
+let mainChart, donutChart;
+
+function buildMain(key) {
+  const d = chartData[key];
+  if (mainChart) mainChart.destroy();
+  mainChart = new Chart(document.getElementById('mainChart'), {
+    type: 'bar',
+    data: { labels: d.labels, datasets: [{ label: d.label, data: d.data, backgroundColor: d.color, borderRadius: 5, borderSkipped: false }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#888780' } }, y: { grid: { color: 'rgba(136,135,128,0.1)' }, ticks: { font: { size: 10 }, color: '#888780' }, beginAtZero: true } } }
+  });
+}
+
+function buildDonut() {
+  donutChart = new Chart(document.getElementById('donutChart'), {
+    type: 'doughnut',
+    data: { labels: ['Clientes','Leads','Inactivos'], datasets: [{ data: [148,67,32], backgroundColor: ['#1D9E75','#3266ad','#B4B2A9'], borderWidth: 0, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false } } }
+  });
+}
+
+function switchChart(key, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildMain(key);
+}
+
+function setActive(el) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function updatePeriod() {
+  const p = document.getElementById('period').value;
+  const mults = { 'Este mes': 1, 'Semana actual': 0.25, 'Mes anterior': 0.9 };
+  const m = mults[p] || 1;
+  document.getElementById('k-citas').textContent = Math.round(64 * m);
+  document.getElementById('k-noshows').textContent = Math.round(7 * m);
+  document.getElementById('k-ing').textContent = '$' + Math.round(38400 * m).toLocaleString();
+  document.getElementById('k-pac').textContent = p === 'Semana actual' ? '247' : Math.round(247 * m);
+}
+
+buildMain('citas');
+buildDonut();
+</script>
+</body>
+</html>

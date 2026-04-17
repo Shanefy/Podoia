@@ -1,0 +1,738 @@
+{
+  "name": "PODOIA - Appointment Lifecycle",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## PODOIA — Appointment Lifecycle\n\n**Trigger 1 (Schedule, cada hora):**\nRecordatorio 24h antes → WhatsApp\n\n**Trigger 2 (Execute desde principal):**\nProcesa respuesta del paciente: confirmar / cancelar / reagendar\n\n**Input:** { action, phone, client_id, business_phone_id, idioma }\n\n**Regla:** Solo gestiona estado de citas. No crea citas nuevas.",
+        "height": 260,
+        "width": 500,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -300,
+        -100
+      ],
+      "id": "397ccc9e-67cc-42b3-a33a-85e6d44a0383",
+      "name": "Nota"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        200
+      ],
+      "id": "8a3d0b0d-e709-40a7-990b-18b192a14894",
+      "name": "Schedule"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c5bb175b-9288-45ad-8a75-a82cd540f197",
+              "name": "client_id",
+              "type": "string",
+              "value": "CAMBIAR-UUID-CLIENTE"
+            },
+            {
+              "id": "ad9e4958-5c1b-45e7-9942-15ea7343cea0",
+              "name": "plan",
+              "type": "string",
+              "value": "premium"
+            },
+            {
+              "id": "61ff26f2-c0d7-4d93-a8c2-7c5b3c0517a4",
+              "name": "business_phone_id",
+              "type": "string",
+              "value": "CAMBIAR-PHONE-NUMBER-ID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        200,
+        200
+      ],
+      "id": "05c7062b-9b5f-483c-b081-11918997a960",
+      "name": "Config"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a9e7f605-2ffd-446c-b43b-441a4e3cd9e1",
+              "leftValue": "={{ $('Leer Plan Features').item.json[0].agenda }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        200
+      ],
+      "id": "a63d190a-2f2e-41e5-a737-a12d42e7190a",
+      "name": "Verificar Plan"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://CAMBIAR-URL.supabase.co/rest/v1/appointments?date=eq.{{ new Date(Date.now()+86400000).toISOString().split('T')[0] }}&status=eq.confirmado&select=*,patients(name,phone)&client_id=eq.{{ $('Config').item.json.client_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "CAMBIAR-SUPABASE-ANON-KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        620,
+        140
+      ],
+      "id": "89df159a-3c96-498e-a064-b5843247eac1",
+      "name": "Consultar DB",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CAMBIAR",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "429e9938-cb1c-4701-964b-0bb44300abec",
+              "leftValue": "={{ Array.isArray($json) && $json.length > 0 }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        140
+      ],
+      "id": "4423537f-aec6-4bf1-b28f-e7fcdaca501e",
+      "name": "Hay Resultados?"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        80
+      ],
+      "id": "b4aae9ae-e754-46d9-8c65-a61a4a6019b7",
+      "name": "Iterar"
+    },
+    {
+      "parameters": {
+        "jsCode": "const c=$json; const name=c.patients?.name||'paciente'; const phone=c.patients?.phone||'';\nconst time=c.time?c.time.substring(0,5):''; const treatment=c.treatment||'consulta';\nreturn [{json:{phone, mensaje:`Olá ${name}! 👋 Lembramos da sua consulta de ${treatment} agendada para amanhã às ${time}. Confirme respondendo SIM ou, para reagendar, responda REAGENDAR. Esperamos você!`}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1240,
+        80
+      ],
+      "id": "3a00e4d0-dfab-493b-be52-f98479c10de6",
+      "name": "Preparar Mensaje"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('Config').item.json.business_phone_id }}",
+        "recipientPhoneNumber": "={{ $json.phone }}",
+        "textBody": "={{ $json.mensaje }}",
+        "additionalFields": {
+          "previewUrl": false
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1460,
+        80
+      ],
+      "id": "2777d15a-a11d-4a72-9044-cf3bbc373fcd",
+      "name": "Enviar WhatsApp",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "CAMBIAR",
+          "name": "WhatsApp"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        620,
+        300
+      ],
+      "id": "f13cbaa6-5a9e-4bd5-a18c-89508f68495c",
+      "name": "Stop"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://CAMBIAR-URL.supabase.co/rest/v1/plans_features?plan=eq.{{ $('Config').item.json.plan }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "CAMBIAR-SUPABASE-ANON-KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        100
+      ],
+      "id": "1133ed18-3517-455a-8169-2c1c9709f49d",
+      "name": "Leer Plan Features",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CAMBIAR",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        700
+      ],
+      "id": "f85dfcc1-ed0b-42ed-b9bc-f42a90f92b76",
+      "name": "Trigger Confirmacion"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst input = $json.query ? (typeof $json.query === 'string' ? (() => { try { return JSON.parse($json.query); } catch(e) { return {}; } })() : $json.query) : $json;\nconst rawAction = (input.action || $json.action || 'confirmar').toLowerCase();\nlet action = 'confirmar';\nif (rawAction.includes('cancel')) action = 'cancelar';\nelse if (rawAction.includes('reagend') || rawAction.includes('cambiar') || rawAction.includes('reprog')) action = 'reagendar';\nreturn [{ json: {\n  action,\n  phone: input.phone || $json.phone || '',\n  client_id: input.client_id || $json.client_id || '',\n  business_phone_id: input.business_phone_id || $json.business_phone_id || '',\n  idioma: input.idioma || $json.idioma || 'Portugués'\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        700
+      ],
+      "id": "432654b3-aea3-485e-804e-b0e9b54a4588",
+      "name": "Parsear Accion"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://CAMBIAR-URL.supabase.co/rest/v1/appointments?select=*,patients(name,phone)&patients.phone=eq.{{ $json.phone }}&client_id=eq.{{ $json.client_id }}&status=in.(pendiente,confirmado)&date=gte.{{ new Date().toISOString().split('T')[0] }}&date=lte.{{ new Date(Date.now()+172800000).toISOString().split('T')[0] }}&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "CAMBIAR-SUPABASE-ANON-KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        700
+      ],
+      "id": "5cfea10e-80f1-4090-b9f6-77f7ea0b60e6",
+      "name": "Buscar Cita Activa",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CAMBIAR",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3763153e-e784-4b2f-b306-7cfd3fc4dd46",
+              "leftValue": "={{ Array.isArray($json) && $json.length > 0 }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        700,
+        700
+      ],
+      "id": "ee0c28ec-808e-4547-a946-d1ae335a2a3a",
+      "name": "Hay Cita Activa?"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst cita = Array.isArray($json) ? $json[0] : $json;\nconst action = $('Parsear Accion').item.json.action;\nconst newStatus = (action === 'confirmar') ? 'confirmado' : 'cancelado';\nreturn [{ json: {\n  appointment_id: cita.id,\n  patient_id: cita.patient_id,\n  patient_name: cita.patients?.name || 'paciente',\n  phone: cita.patients?.phone || $('Parsear Accion').item.json.phone,\n  business_phone_id: $('Parsear Accion').item.json.business_phone_id,\n  date: cita.date,\n  time: cita.time ? cita.time.substring(0,5) : '',\n  treatment: cita.treatment || 'consulta',\n  action,\n  new_status: newStatus,\n  client_id: $('Parsear Accion').item.json.client_id,\n  idioma: $('Parsear Accion').item.json.idioma\n}}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        600
+      ],
+      "id": "abb988b0-ab49-4a02-af79-87f31040e9ec",
+      "name": "Actualizar Status Cita"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://CAMBIAR-URL.supabase.co/rest/v1/appointments?id=eq.{{ $json.appointment_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "CAMBIAR-SUPABASE-ANON-KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: $json.new_status }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1160,
+        600
+      ],
+      "id": "2e70b3f2-a30b-4a83-8afa-ab098ab0a1e0",
+      "name": "Patch Status DB",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CAMBIAR",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst d = $('Actualizar Status Cita').item.json;\nconst action = d.action;\nconst idioma = d.idioma || 'Portugués';\nconst isPortugues = idioma.toLowerCase().includes('portugu');\nlet msg;\nif (action === 'confirmar') {\n  msg = isPortugues\n    ? `✅ Perfeito, ${d.patient_name}! Sua consulta de ${d.treatment} foi confirmada para ${d.date} às ${d.time}. Te esperamos! 🦶`\n    : `✅ ¡Perfecto, ${d.patient_name}! Tu consulta de ${d.treatment} está confirmada para el ${d.date} a las ${d.time}. ¡Te esperamos! 🦶`;\n} else if (action === 'cancelar') {\n  msg = isPortugues\n    ? `❌ Tudo bem, ${d.patient_name}. Sua consulta de ${d.treatment} foi cancelada. Se quiser reagendar, é só nos escrever! 😊`\n    : `❌ Entendido, ${d.patient_name}. Tu consulta de ${d.treatment} ha sido cancelada. Si quieres reagendar, escríbenos. 😊`;\n} else {\n  // reagendar\n  msg = isPortugues\n    ? `🔄 Claro, ${d.patient_name}! Cancelei sua consulta de ${d.treatment} que estava para ${d.date} às ${d.time}. Qual dia e horário prefere para remarcar? 📅`\n    : `🔄 Claro, ${d.patient_name}. Cancelé tu consulta de ${d.treatment} del ${d.date} a las ${d.time}. ¿Qué día y horario prefieres para reagendar? 📅`;\n}\nreturn [{ json: { phone: d.phone, business_phone_id: d.business_phone_id, mensaje: msg }}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        600
+      ],
+      "id": "4bd7e701-5f37-4023-bd68-1d896ec9ed79",
+      "name": "Preparar Mensaje Respuesta"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $json.business_phone_id }}",
+        "recipientPhoneNumber": "={{ $json.phone }}",
+        "textBody": "={{ $json.mensaje }}",
+        "additionalFields": {
+          "previewUrl": false
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        600
+      ],
+      "id": "2aeb510e-0a22-4974-b9f7-75cd6b1c8ecc",
+      "name": "Enviar Respuesta",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "CAMBIAR",
+          "name": "WhatsApp"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst d = $('Parsear Accion').item.json;\nconst isPortugues = (d.idioma || '').toLowerCase().includes('portugu');\nconst msg = isPortugues\n  ? '🔍 Não encontramos nenhuma consulta próxima associada ao seu número. Se precisar de ajuda, pode nos contar o que precisas!'\n  : '🔍 No encontramos ninguna cita próxima asociada a tu número. ¡Dinos en qué podemos ayudarte!';\nreturn [{ json: { phone: d.phone, business_phone_id: d.business_phone_id, mensaje: msg }}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        820
+      ],
+      "id": "0fdcef1b-d00c-4688-bb3f-42c8710493b4",
+      "name": "Preparar Sin Cita"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $json.business_phone_id }}",
+        "recipientPhoneNumber": "={{ $json.phone }}",
+        "textBody": "={{ $json.mensaje }}",
+        "additionalFields": {
+          "previewUrl": false
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        820
+      ],
+      "id": "41c02fc7-e19a-4931-b471-1063c4f2e8c8",
+      "name": "Enviar Sin Cita",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "CAMBIAR",
+          "name": "WhatsApp"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Leer Plan Features",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Plan": {
+      "main": [
+        [
+          {
+            "node": "Consultar DB",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar DB": {
+      "main": [
+        [
+          {
+            "node": "Hay Resultados?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hay Resultados?": {
+      "main": [
+        [
+          {
+            "node": "Iterar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Iterar": {
+      "main": [
+        [
+          {
+            "node": "Preparar Mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Mensaje": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Plan Features": {
+      "main": [
+        [
+          {
+            "node": "Verificar Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Confirmacion": {
+      "main": [
+        [
+          {
+            "node": "Parsear Accion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsear Accion": {
+      "main": [
+        [
+          {
+            "node": "Buscar Cita Activa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Cita Activa": {
+      "main": [
+        [
+          {
+            "node": "Hay Cita Activa?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hay Cita Activa?": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Status Cita",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar Sin Cita",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar Status Cita": {
+      "main": [
+        [
+          {
+            "node": "Patch Status DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Patch Status DB": {
+      "main": [
+        [
+          {
+            "node": "Preparar Mensaje Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Mensaje Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Sin Cita": {
+      "main": [
+        [
+          {
+            "node": "Enviar Sin Cita",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5487c49e-8afc-4c9d-a778-657a13bcff0d",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "3d42f398-a90a-4bff-83ae-90aeea66f331",
+  "tags": [
+    {
+      "id": "tag-podoia",
+      "name": "PODOIA"
+    }
+  ]
+}
