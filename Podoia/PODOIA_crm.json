@@ -3,17 +3,14 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## PODOIA_crm — Sub-workflow CRM\n\n**Acciones:**\n- upsert → identifica/crea paciente\n- post_conversation → actualiza estado, guarda interacciones, tags\n\n**Contrato entrada upsert:** { action, phone, client_id }\n**Contrato entrada post_conv:** { action, patient_id, patient_status, patient_score, intent, mensaje_usuario, respuesta_agente, client_id }\n\n**Regla:** El CRM no decide ni habla. Solo registra y organiza.",
-        "height": 260,
-        "width": 560,
+        "content": "## PODOIA_crm — Sub-workflow CRM v2\n\n**Acciones:**\n- upsert → identifica/crea paciente\n- post_conversation → actualiza estado, guarda interacciones, tags\n\n**Contrato entrada upsert:** { action, phone, client_id, name? }\n**Contrato entrada post_conv:** { action, patient_id, patient_status, patient_score, intent, mensaje_usuario, respuesta_agente, client_id, appointment_created }\n\n**Fixes v2:**\n- plan_crm: expresión corregida\n- Actualizar Paciente: actualiza name si viene en payload\n- client_id guardado en interactions\n- Guard antes de POST Tags si tags vacíos\n- appointment_created: flag explícito reemplaza detección de texto\n\n**Regla:** El CRM no decide ni habla. Solo registra y organiza.",
+        "height": 320,
+        "width": 640,
         "color": 4
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [
-        -380,
-        -80
-      ],
+      "position": [-380, -100],
       "id": "6b0c2e19-9f5c-4328-b092-3098cf7ba949",
       "name": "Nota"
     },
@@ -21,10 +18,7 @@
       "parameters": {},
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1,
-      "position": [
-        0,
-        300
-      ],
+      "position": [0, 300],
       "id": "d0fb9a0d-4fc8-4e4c-a972-a67090f60bb6",
       "name": "Trigger"
     },
@@ -34,20 +28,13 @@
           "values": [
             {
               "conditions": {
-                "options": {
-                  "version": 2,
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
+                "options": { "version": 2, "caseSensitive": true, "typeValidation": "strict" },
                 "conditions": [
                   {
                     "id": "6f4ba6c5-6f66-4ed3-bb04-858e0f3fe1e6",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "upsert",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ],
                 "combinator": "and"
@@ -57,20 +44,13 @@
             },
             {
               "conditions": {
-                "options": {
-                  "version": 2,
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
+                "options": { "version": 2, "caseSensitive": true, "typeValidation": "strict" },
                 "conditions": [
                   {
                     "id": "423da94f-013f-4386-be5c-ee703532abda",
                     "leftValue": "={{ $json.action }}",
                     "rightValue": "post_conversation",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
+                    "operator": { "type": "string", "operation": "equals" }
                   }
                 ],
                 "combinator": "and"
@@ -84,10 +64,7 @@
       },
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [
-        220,
-        300
-      ],
+      "position": [220, 300],
       "id": "18ab1b92-71fc-48d0-acf7-18553ba9456b",
       "name": "Switch Accion"
     },
@@ -100,60 +77,33 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "CAMBIAR-SUPABASE-ANON-KEY"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            }
+            { "name": "apikey", "value": "CAMBIAR-SUPABASE-ANON-KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
           ]
         },
         "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          }
+          "response": { "response": { "responseFormat": "json" } }
         }
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        440,
-        120
-      ],
+      "position": [440, 120],
       "id": "28f576a5-87ff-42a0-a875-21ab96b9dfbb",
       "name": "Buscar Paciente",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "CAMBIAR",
-          "name": "Supabase API"
-        }
+        "httpHeaderAuth": { "id": "CAMBIAR", "name": "Supabase API" }
       }
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "typeValidation": "strict",
-            "version": 2
-          },
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
           "conditions": [
             {
               "id": "3780c2d8-95dc-4006-a4f7-085796e7184b",
               "leftValue": "={{ Array.isArray($json) && $json.length > 0 }}",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
             }
           ],
           "combinator": "and"
@@ -162,10 +112,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        660,
-        120
-      ],
+      "position": [660, 120],
       "id": "a34528a2-3eed-4a68-9ba7-fd11427bd832",
       "name": "Existe?"
     },
@@ -178,38 +125,23 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "CAMBIAR-SUPABASE-ANON-KEY"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            }
+            { "name": "apikey", "value": "CAMBIAR-SUPABASE-ANON-KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ last_interaction: new Date().toISOString() }) }}",
+        "jsonBody": "={{ JSON.stringify({ last_interaction: new Date().toISOString(), ...($('Trigger').item.json.name ? { name: $('Trigger').item.json.name } : {}) }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        880,
-        0
-      ],
+      "position": [880, 0],
       "id": "1fa456cf-9e50-455c-b4fb-237db7ecc1e9",
       "name": "Actualizar Paciente",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "CAMBIAR",
-          "name": "Supabase API"
-        }
+        "httpHeaderAuth": { "id": "CAMBIAR", "name": "Supabase API" }
       }
     },
     {
@@ -218,10 +150,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1100,
-        0
-      ],
+      "position": [1100, 0],
       "id": "d32e7a0f-d007-4d7e-b885-2adff24f6d10",
       "name": "Set Paciente Existente"
     },
@@ -234,18 +163,9 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "CAMBIAR-SUPABASE-ANON-KEY"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            }
+            { "name": "apikey", "value": "CAMBIAR-SUPABASE-ANON-KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
           ]
         },
         "sendBody": true,
@@ -255,17 +175,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        880,
-        240
-      ],
+      "position": [880, 240],
       "id": "ab6b7b64-bd9b-43de-9156-ed1e03ddfd6f",
       "name": "Crear Paciente",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "CAMBIAR",
-          "name": "Supabase API"
-        }
+        "httpHeaderAuth": { "id": "CAMBIAR", "name": "Supabase API" }
       }
     },
     {
@@ -277,18 +191,9 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "CAMBIAR-SUPABASE-ANON-KEY"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            }
+            { "name": "apikey", "value": "CAMBIAR-SUPABASE-ANON-KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
           ]
         },
         "sendBody": true,
@@ -298,17 +203,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1100,
-        240
-      ],
+      "position": [1100, 240],
       "id": "6e6ae7bb-547a-473f-8669-1797665f0244",
       "name": "Tag Nuevo",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "CAMBIAR",
-          "name": "Supabase API"
-        }
+        "httpHeaderAuth": { "id": "CAMBIAR", "name": "Supabase API" }
       }
     },
     {
@@ -317,10 +216,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1320,
-        240
-      ],
+      "position": [1320, 240],
       "id": "b56cad47-7c04-4142-af47-f852445aeb2b",
       "name": "Set Paciente Nuevo"
     },
@@ -328,23 +224,17 @@
       "parameters": {},
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [
-        1540,
-        120
-      ],
+      "position": [1540, 120],
       "id": "e20f0de7-94a2-41b3-b800-8f0eb49d2b05",
       "name": "Merge Upsert"
     },
     {
       "parameters": {
-        "jsCode": "\nconst intent = $json.intent;\nconst patientId = $json.patient_id;\nconst currentStatus = $json.patient_status || 'nuevo';\nconst currentScore = $json.patient_score || 0;\nconst agentOutput = $json.respuesta_agente || '';\n\nconst TRANSITIONS = {\n  agendar:     { score: +3, status: 'lead',    tags: ['interesado'] },\n  confirmar:   { score: +5, status: 'cliente',  tags: ['cita_agendada'] },\n  consultar:   { score: +1, status: currentStatus === 'nuevo' ? 'lead' : currentStatus, tags: [] },\n  precios:     { score: +2, status: currentStatus === 'nuevo' ? 'lead' : currentStatus, tags: ['pidio_precios'] },\n  urgencia:    { score: +3, status: 'lead',    tags: ['urgente'] },\n  reprogramar: { score: +0, status: currentStatus, tags: [] },\n  cancelar:    { score: -2, status: currentStatus, tags: ['cancelo'] },\n  seguimiento: { score: +1, status: currentStatus, tags: [] },\n  saludo:      { score: +0, status: currentStatus, tags: [] },\n  otro:        { score: +0, status: currentStatus, tags: [] }\n};\n\nconst t = TRANSITIONS[intent] || TRANSITIONS['otro'];\nlet finalStatus = t.status;\nif (currentStatus === 'inactivo' && intent !== 'saludo' && intent !== 'otro') {\n  finalStatus = 'lead';\n  t.tags.push('reactivado');\n}\nconst agentoAgendo = agentOutput.toLowerCase().includes('cita confirmada') ||\n                     agentOutput.toLowerCase().includes('agendada') ||\n                     agentOutput.toLowerCase().includes('evento criado');\nif (agentoAgendo && finalStatus !== 'cliente') {\n  finalStatus = 'cliente';\n  t.score = Math.max(t.score, 5);\n  if (!t.tags.includes('cita_agendada')) t.tags.push('cita_agendada');\n}\nreturn [{ json: {\n  patient_id: patientId,\n  new_status: finalStatus,\n  new_score: Math.max(0, currentScore + t.score),\n  new_tags: t.tags,\n  intent,\n  mensaje_usuario: $json.mensaje_usuario,\n  respuesta_agente: agentOutput,\n  client_id: $json.client_id\n}}];\n"
+        "jsCode": "\nconst intent = $json.intent;\nconst patientId = $json.patient_id;\nconst currentStatus = $json.patient_status || 'nuevo';\nconst currentScore = $json.patient_score || 0;\nconst agentOutput = $json.respuesta_agente || '';\n// FIX: flag explícito en lugar de detección de texto del agente\nconst appointmentCreated = $json.appointment_created === true;\n\nconst TRANSITIONS = {\n  agendar:     { score: +3, status: 'lead',    tags: ['interesado'] },\n  confirmar:   { score: +5, status: 'cliente',  tags: ['cita_agendada'] },\n  consultar:   { score: +1, status: currentStatus === 'nuevo' ? 'lead' : currentStatus, tags: [] },\n  precios:     { score: +2, status: currentStatus === 'nuevo' ? 'lead' : currentStatus, tags: ['pidio_precios'] },\n  urgencia:    { score: +3, status: 'lead',    tags: ['urgente'] },\n  reprogramar: { score: +0, status: currentStatus, tags: [] },\n  cancelar:    { score: -2, status: currentStatus, tags: ['cancelo'] },\n  seguimiento: { score: +1, status: currentStatus, tags: [] },\n  saludo:      { score: +0, status: currentStatus, tags: [] },\n  otro:        { score: +0, status: currentStatus, tags: [] }\n};\n\nconst t = TRANSITIONS[intent] || TRANSITIONS['otro'];\nlet finalStatus = t.status;\nif (currentStatus === 'inactivo' && intent !== 'saludo' && intent !== 'otro') {\n  finalStatus = 'lead';\n  t.tags.push('reactivado');\n}\nif (appointmentCreated && finalStatus !== 'cliente') {\n  finalStatus = 'cliente';\n  t.score = Math.max(t.score, 5);\n  if (!t.tags.includes('cita_agendada')) t.tags.push('cita_agendada');\n}\nreturn [{ json: {\n  patient_id: patientId,\n  new_status: finalStatus,\n  new_score: Math.max(0, currentScore + t.score),\n  new_tags: t.tags,\n  intent,\n  mensaje_usuario: $json.mensaje_usuario,\n  respuesta_agente: agentOutput,\n  client_id: $json.client_id\n}}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        440,
-        500
-      ],
+      "position": [440, 500],
       "id": "64932f46-b2e1-46b8-8c24-663241989f66",
       "name": "Maquina de Estados CRM"
     },
@@ -357,38 +247,23 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "CAMBIAR-SUPABASE-ANON-KEY"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            }
+            { "name": "apikey", "value": "CAMBIAR-SUPABASE-ANON-KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ patient_id: $json.patient_id, message: $json.mensaje_usuario, role: 'user', intent: $json.intent }) }}",
+        "jsonBody": "={{ JSON.stringify({ patient_id: $json.patient_id, client_id: $json.client_id, message: $json.mensaje_usuario, role: 'user', intent: $json.intent }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        660,
-        420
-      ],
+      "position": [660, 420],
       "id": "a0333b2f-2bb3-4078-a63a-558894457d8a",
       "name": "Guardar Msg Usuario",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "CAMBIAR",
-          "name": "Supabase API"
-        }
+        "httpHeaderAuth": { "id": "CAMBIAR", "name": "Supabase API" }
       }
     },
     {
@@ -400,38 +275,23 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "CAMBIAR-SUPABASE-ANON-KEY"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            }
+            { "name": "apikey", "value": "CAMBIAR-SUPABASE-ANON-KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ patient_id: $('Maquina de Estados CRM').item.json.patient_id, message: $('Maquina de Estados CRM').item.json.respuesta_agente, role: 'assistant', intent: 'response' }) }}",
+        "jsonBody": "={{ JSON.stringify({ patient_id: $('Maquina de Estados CRM').item.json.patient_id, client_id: $('Maquina de Estados CRM').item.json.client_id, message: $('Maquina de Estados CRM').item.json.respuesta_agente, role: 'assistant', intent: 'response' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        880,
-        420
-      ],
+      "position": [880, 420],
       "id": "152af9d9-60e6-4250-b54c-b54bd94cdf43",
       "name": "Guardar Msg Agente",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "CAMBIAR",
-          "name": "Supabase API"
-        }
+        "httpHeaderAuth": { "id": "CAMBIAR", "name": "Supabase API" }
       }
     },
     {
@@ -443,18 +303,9 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "CAMBIAR-SUPABASE-ANON-KEY"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            }
+            { "name": "apikey", "value": "CAMBIAR-SUPABASE-ANON-KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
           ]
         },
         "sendBody": true,
@@ -464,31 +315,44 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1100,
-        420
-      ],
+      "position": [1100, 420],
       "id": "982cb70c-707e-494a-bc62-1980ce2098c2",
       "name": "Actualizar Estado",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "CAMBIAR",
-          "name": "Supabase API"
-        }
+        "httpHeaderAuth": { "id": "CAMBIAR", "name": "Supabase API" }
       }
     },
     {
       "parameters": {
-        "jsCode": "\nconst tags = $('Maquina de Estados CRM').item.json.new_tags || [];\nconst patientId = $('Maquina de Estados CRM').item.json.patient_id;\nif (!patientId || tags.length === 0) return [{ json: { done: true, tags_added: 0 } }];\nconst body = tags.map(t => ({ patient_id: patientId, tag: t }));\nreturn [{ json: { tags_to_insert: body, count: tags.length } }];\n"
+        "jsCode": "\nconst tags = $('Maquina de Estados CRM').item.json.new_tags || [];\nconst patientId = $('Maquina de Estados CRM').item.json.patient_id;\nif (!patientId || tags.length === 0) return [{ json: { done: true, tags_added: 0, count: 0 } }];\nconst body = tags.map(t => ({ patient_id: patientId, tag: t }));\nreturn [{ json: { tags_to_insert: body, count: tags.length } }];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1320,
-        420
-      ],
+      "position": [1320, 420],
       "id": "1cd42569-e218-4433-bd64-02af7de8be9a",
       "name": "Insertar Tags"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "id": "tags-guard-condition-001",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1540, 420],
+      "id": "f8a3c1b2-0e4d-4a7f-9c3e-2b6d5e8f1a3c",
+      "name": "Hay Tags?"
     },
     {
       "parameters": {
@@ -499,22 +363,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "CAMBIAR-SUPABASE-ANON-KEY"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            },
-            {
-              "name": "on_conflict",
-              "value": "patient_id,tag"
-            }
+            { "name": "apikey", "value": "CAMBIAR-SUPABASE-ANON-KEY" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" },
+            { "name": "on_conflict", "value": "patient_id,tag" }
           ]
         },
         "sendBody": true,
@@ -524,36 +376,22 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1540,
-        420
-      ],
+      "position": [1760, 420],
       "id": "390aa9c2-59d5-44bc-afd5-c6276796f23c",
       "name": "POST Tags",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "CAMBIAR",
-          "name": "Supabase API"
-        }
+        "httpHeaderAuth": { "id": "CAMBIAR", "name": "Supabase API" }
       }
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "typeValidation": "loose",
-            "version": 2
-          },
+          "options": { "caseSensitive": true, "typeValidation": "loose", "version": 2 },
           "conditions": [
             {
               "id": "7534b7a4-0626-4cd5-b7e5-1f87b2fd5210",
-              "leftValue": "={{ .plan_crm }}",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
+              "leftValue": "={{ $json.plan_crm }}",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
             }
           ],
           "combinator": "and"
@@ -562,10 +400,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        440,
-        -80
-      ],
+      "position": [440, -80],
       "id": "cd892be4-c93e-42ce-96d1-404161675e0e",
       "name": "Plan CRM OK?"
     },
@@ -575,210 +410,73 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        660,
-        -160
-      ],
+      "position": [660, -160],
       "id": "129c7d01-83c3-4abe-a729-49dbfd7be539",
       "name": "Return Skip"
     }
   ],
   "connections": {
     "Trigger": {
-      "main": [
-        [
-          {
-            "node": "Switch Accion",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Switch Accion", "type": "main", "index": 0 }]]
     },
     "Switch Accion": {
       "main": [
-        [
-          {
-            "node": "Plan CRM OK?",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Maquina de Estados CRM",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Buscar Paciente": {
-      "main": [
-        [
-          {
-            "node": "Existe?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Existe?": {
-      "main": [
-        [
-          {
-            "node": "Actualizar Paciente",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Crear Paciente",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Actualizar Paciente": {
-      "main": [
-        [
-          {
-            "node": "Set Paciente Existente",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Set Paciente Existente": {
-      "main": [
-        [
-          {
-            "node": "Merge Upsert",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Crear Paciente": {
-      "main": [
-        [
-          {
-            "node": "Tag Nuevo",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Tag Nuevo": {
-      "main": [
-        [
-          {
-            "node": "Set Paciente Nuevo",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Set Paciente Nuevo": {
-      "main": [
-        [
-          {
-            "node": "Merge Upsert",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Maquina de Estados CRM": {
-      "main": [
-        [
-          {
-            "node": "Guardar Msg Usuario",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Guardar Msg Usuario": {
-      "main": [
-        [
-          {
-            "node": "Guardar Msg Agente",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Guardar Msg Agente": {
-      "main": [
-        [
-          {
-            "node": "Actualizar Estado",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Actualizar Estado": {
-      "main": [
-        [
-          {
-            "node": "Insertar Tags",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Insertar Tags": {
-      "main": [
-        [
-          {
-            "node": "POST Tags",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Plan CRM OK?", "type": "main", "index": 0 }],
+        [{ "node": "Maquina de Estados CRM", "type": "main", "index": 0 }]
       ]
     },
     "Plan CRM OK?": {
       "main": [
-        [
-          {
-            "node": "Buscar Paciente",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Return Skip",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Buscar Paciente", "type": "main", "index": 0 }],
+        [{ "node": "Return Skip", "type": "main", "index": 0 }]
       ]
     },
-    "Return Skip": {
+    "Buscar Paciente": {
+      "main": [[{ "node": "Existe?", "type": "main", "index": 0 }]]
+    },
+    "Existe?": {
       "main": [
-        [
-          {
-            "node": "Merge Upsert",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Actualizar Paciente", "type": "main", "index": 0 }],
+        [{ "node": "Crear Paciente", "type": "main", "index": 0 }]
+      ]
+    },
+    "Actualizar Paciente": {
+      "main": [[{ "node": "Set Paciente Existente", "type": "main", "index": 0 }]]
+    },
+    "Set Paciente Existente": {
+      "main": [[{ "node": "Merge Upsert", "type": "main", "index": 0 }]]
+    },
+    "Crear Paciente": {
+      "main": [[{ "node": "Tag Nuevo", "type": "main", "index": 0 }]]
+    },
+    "Tag Nuevo": {
+      "main": [[{ "node": "Set Paciente Nuevo", "type": "main", "index": 0 }]]
+    },
+    "Set Paciente Nuevo": {
+      "main": [[{ "node": "Merge Upsert", "type": "main", "index": 0 }]]
+    },
+    "Return Skip": {
+      "main": [[{ "node": "Merge Upsert", "type": "main", "index": 0 }]]
+    },
+    "Maquina de Estados CRM": {
+      "main": [[{ "node": "Guardar Msg Usuario", "type": "main", "index": 0 }]]
+    },
+    "Guardar Msg Usuario": {
+      "main": [[{ "node": "Guardar Msg Agente", "type": "main", "index": 0 }]]
+    },
+    "Guardar Msg Agente": {
+      "main": [[{ "node": "Actualizar Estado", "type": "main", "index": 0 }]]
+    },
+    "Actualizar Estado": {
+      "main": [[{ "node": "Insertar Tags", "type": "main", "index": 0 }]]
+    },
+    "Insertar Tags": {
+      "main": [[{ "node": "Hay Tags?", "type": "main", "index": 0 }]]
+    },
+    "Hay Tags?": {
+      "main": [
+        [{ "node": "POST Tags", "type": "main", "index": 0 }],
+        []
       ]
     }
   },
@@ -787,6 +485,6 @@
     "executionOrder": "v1"
   },
   "meta": {
-    "instanceId": "podoia-crm-v1"
+    "instanceId": "podoia-crm-v2"
   }
 }

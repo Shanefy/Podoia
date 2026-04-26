@@ -3,17 +3,14 @@
   "nodes": [
     {
       "parameters": {
-        "content": "## PODOIA - Sub: Google Calendar\n\nLlamado por el Agente de IA como herramienta.\n\n**Acciones:**\n- verificar_disponibilidad → FreeBusy + slots\n- agendar_cita → Evento Google Calendar + Supabase\n- cancelar_cita → Eliminar evento + actualizar DB\n\n**Config (editable en Parsear Params):**\n- Horario laboral: 08:00–18:00\n- Duración slot: 45 min\n- Pausa entre citas: 15 min",
-        "height": 340,
-        "width": 500,
+        "content": "## PODOIA - Sub: Google Calendar v2\n\nLlamado por el Agente de IA como herramienta.\n\n**Acciones:**\n- verificar_disponibilidad → FreeBusy + slots\n- agendar_cita → Evento Google Calendar + Supabase\n- cancelar_cita → Eliminar evento + actualizar DB\n\n**Config (editable en Parsear Params):**\n- Horario laboral: 08:00–18:00\n- Duración slot: 45 min\n- Pausa entre citas: 15 min\n\n**Fixes v2:**\n- Datos OK? false branch ahora retorna error al agente\n- Terminal de agendamiento es Confirmar Cita (no Gmail)\n- Notificar Podologo tiene continueOnFail=true",
+        "height": 380,
+        "width": 520,
         "color": 4
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [
-        -400,
-        -100
-      ],
+      "position": [-400, -140],
       "id": "671559b6-ef66-4ba0-97ae-95e8eba5014e",
       "name": "Nota"
     },
@@ -21,10 +18,7 @@
       "parameters": {},
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1,
-      "position": [
-        0,
-        200
-      ],
+      "position": [0, 200],
       "id": "edaa74dd-2b77-4bb7-b3e4-a5c44e7803d0",
       "name": "Trigger"
     },
@@ -34,10 +28,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        220,
-        200
-      ],
+      "position": [220, 200],
       "id": "46763503-583d-4b53-933f-0febfd703986",
       "name": "Parsear Params"
     },
@@ -47,22 +38,8 @@
           "values": [
             {
               "conditions": {
-                "options": {
-                  "version": 2,
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
-                "conditions": [
-                  {
-                    "id": "401a3352-bced-4982-a0bd-df8e7656769a",
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "verificar_disponibilidad",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
+                "options": {"version": 2, "caseSensitive": true, "typeValidation": "strict"},
+                "conditions": [{"id": "401a3352-bced-4982-a0bd-df8e7656769a", "leftValue": "={{ $json.action }}", "rightValue": "verificar_disponibilidad", "operator": {"type": "string", "operation": "equals"}}],
                 "combinator": "and"
               },
               "renameOutput": true,
@@ -70,22 +47,8 @@
             },
             {
               "conditions": {
-                "options": {
-                  "version": 2,
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
-                "conditions": [
-                  {
-                    "id": "c573d5df-b24b-45f6-86db-842128af7fe3",
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "agendar_cita",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
+                "options": {"version": 2, "caseSensitive": true, "typeValidation": "strict"},
+                "conditions": [{"id": "c573d5df-b24b-45f6-86db-842128af7fe3", "leftValue": "={{ $json.action }}", "rightValue": "agendar_cita", "operator": {"type": "string", "operation": "equals"}}],
                 "combinator": "and"
               },
               "renameOutput": true,
@@ -93,22 +56,8 @@
             },
             {
               "conditions": {
-                "options": {
-                  "version": 2,
-                  "caseSensitive": true,
-                  "typeValidation": "strict"
-                },
-                "conditions": [
-                  {
-                    "id": "a48d650a-8c33-48df-b9a1-f6b7786f9bbc",
-                    "leftValue": "={{ $json.action }}",
-                    "rightValue": "cancelar_cita",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
+                "options": {"version": 2, "caseSensitive": true, "typeValidation": "strict"},
+                "conditions": [{"id": "a48d650a-8c33-48df-b9a1-f6b7786f9bbc", "leftValue": "={{ $json.action }}", "rightValue": "cancelar_cita", "operator": {"type": "string", "operation": "equals"}}],
                 "combinator": "and"
               },
               "renameOutput": true,
@@ -120,39 +69,24 @@
       },
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
-      "position": [
-        440,
-        200
-      ],
+      "position": [440, 200],
       "id": "208a3a11-0c2b-4016-ad8c-fe4157886ef4",
       "name": "Ruta"
     },
     {
       "parameters": {
         "operation": "getAll",
-        "calendar": {
-          "__rl": true,
-          "value": "={{ $('Parsear Params').item.json.calendarId }}",
-          "mode": "id"
-        },
+        "calendar": {"__rl": true, "value": "={{ $('Parsear Params').item.json.calendarId }}", "mode": "id"},
         "timeMin": "={{ $('Parsear Params').item.json.date }}T00:00:00Z",
         "timeMax": "={{ $('Parsear Params').item.json.date }}T23:59:59Z",
         "options": {}
       },
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
-      "position": [
-        700,
-        60
-      ],
+      "position": [700, 60],
       "id": "ca39d448-bf21-402a-99b9-3843003661b1",
       "name": "Obtener Eventos",
-      "credentials": {
-        "googleCalendarOAuth2Api": {
-          "id": "CAMBIAR",
-          "name": "Google Calendar"
-        }
-      }
+      "credentials": {"googleCalendarOAuth2Api": {"id": "CAMBIAR", "name": "Google Calendar"}}
     },
     {
       "parameters": {
@@ -160,10 +94,7 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        920,
-        60
-      ],
+      "position": [920, 60],
       "id": "f6215b04-ea67-4cb7-9009-d19b4a0b8202",
       "name": "Calcular Slots"
     },
@@ -173,53 +104,39 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        570,
-        220
-      ],
+      "position": [700, 220],
       "id": "0c1160bf-4e39-4870-91e2-aaaf77cb80f1",
       "name": "Validar Datos"
     },
     {
       "parameters": {
         "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "f205e73f-8dad-4b9a-8f70-632e69b73d66",
-              "leftValue": "={{ $json.valid }}",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
+          "options": {"caseSensitive": true, "typeValidation": "strict", "version": 2},
+          "conditions": [{"id": "f205e73f-8dad-4b9a-8f70-632e69b73d66", "leftValue": "={{ $json.valid }}", "operator": {"type": "boolean", "operation": "true", "singleValue": true}}],
           "combinator": "and"
         },
         "options": {}
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        790,
-        220
-      ],
+      "position": [920, 220],
       "id": "98dc067d-fe7a-47a1-ad34-8cde818ebb66",
       "name": "Datos OK?"
     },
     {
       "parameters": {
+        "jsCode": "\n// FIX v2: retorna el mensaje de error para que el agente lo reciba correctamente\nreturn [{ json: $('Validar Datos').item.json }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 360],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Return Error Datos"
+    },
+    {
+      "parameters": {
         "operation": "create",
-        "calendarId": {
-          "__rl": true,
-          "value": "={{ $('Parsear Params').item.json.calendarId }}",
-          "mode": "id"
-        },
+        "calendarId": {"__rl": true, "value": "={{ $('Parsear Params').item.json.calendarId }}", "mode": "id"},
         "start": "={{ $('Parsear Params').item.json.date }}T{{ $('Parsear Params').item.json.time }}:00",
         "end": "={{ (() => { const [h,m] = $('Parsear Params').item.json.time.split(':').map(Number); const endMin = h*60+m+$('Parsear Params').item.json.slotMinutes; const eh = Math.floor(endMin/60).toString().padStart(2,'0'); const em = (endMin%60).toString().padStart(2,'0'); return $('Parsear Params').item.json.date + 'T' + eh + ':' + em + ':00'; })() }}",
         "summary": "={{ $('Parsear Params').item.json.treatment }} - {{ $('Parsear Params').item.json.patientName }}",
@@ -230,18 +147,10 @@
       },
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
-      "position": [
-        700,
-        220
-      ],
+      "position": [1140, 220],
       "id": "bc0e26ff-8f7b-468d-bd33-ac58f17b4cc1",
       "name": "Crear Evento GCal",
-      "credentials": {
-        "googleCalendarOAuth2Api": {
-          "id": "CAMBIAR",
-          "name": "Google Calendar"
-        }
-      }
+      "credentials": {"googleCalendarOAuth2Api": {"id": "CAMBIAR", "name": "Google Calendar"}}
     },
     {
       "parameters": {
@@ -252,18 +161,9 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "CAMBIAR-SUPABASE-ANON-KEY"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            }
+            {"name": "apikey", "value": "CAMBIAR-SUPABASE-ANON-KEY"},
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Prefer", "value": "return=representation"}
           ]
         },
         "sendBody": true,
@@ -273,29 +173,33 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        920,
-        220
-      ],
+      "position": [1360, 220],
       "id": "596e71c3-23b1-4ab4-89b1-a8dcdc365eb3",
       "name": "Guardar Cita DB",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "CAMBIAR",
-          "name": "Supabase API"
-        }
-      }
+      "credentials": {"httpHeaderAuth": {"id": "CAMBIAR", "name": "Supabase API"}}
     },
     {
       "parameters": {
-        "jsCode": "\nconst p = $('Parsear Params').item.json;\nreturn [{ json: { success: true, message: `Cita confirmada: ${p.treatment} para ${p.patientName} el ${p.date} a las ${p.time}. Evento creado en el calendario.`, date: p.date, time: p.time, treatment: p.treatment, patient: p.patientName, google_event_id: $('Crear Evento GCal').item.json.id }}];\n"
+        "sendTo": "CAMBIAR-EMAIL-PODOLOGO@gmail.com",
+        "subject": "=📅 Nueva cita: {{ $('Parsear Params').item.json.treatment }} - {{ $('Parsear Params').item.json.patientName }}",
+        "message": "=Se ha agendado una nueva cita:\n\nPaciente: {{ $('Parsear Params').item.json.patientName }}\nTeléfono: {{ $('Parsear Params').item.json.patientPhone }}\nTratamiento: {{ $('Parsear Params').item.json.treatment }}\nFecha: {{ $('Parsear Params').item.json.date }}\nHora: {{ $('Parsear Params').item.json.time }}\n\nLa cita ya fue creada en tu Google Calendar.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 1,
+      "position": [1580, 220],
+      "continueOnFail": true,
+      "id": "bda489d7-b6ba-4009-8600-303e0e887c1c",
+      "name": "Notificar Podologo",
+      "credentials": {"gmailOAuth2": {"id": "CAMBIAR", "name": "Gmail"}}
+    },
+    {
+      "parameters": {
+        "jsCode": "\n// FIX v2: retorna los datos de la cita (no el response de Gmail) para que el agente los reciba\nconst p = $('Parsear Params').item.json;\nreturn [{ json: {\n  success: true,\n  message: `Cita confirmada: ${p.treatment} para ${p.patientName} el ${p.date} a las ${p.time}. Evento creado en el calendario.`,\n  date: p.date,\n  time: p.time,\n  treatment: p.treatment,\n  patient: p.patientName,\n  google_event_id: $('Crear Evento GCal').item.json.id\n}}];\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1140,
-        220
-      ],
+      "position": [1800, 220],
       "id": "689e9095-5602-4df7-ae5f-ec9cecdbe333",
       "name": "Confirmar Cita"
     },
@@ -308,67 +212,32 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "CAMBIAR-SUPABASE-ANON-KEY"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            }
+            {"name": "apikey", "value": "CAMBIAR-SUPABASE-ANON-KEY"},
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Prefer", "value": "return=representation"}
           ]
         },
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json"
-            }
-          }
-        }
+        "options": {"response": {"response": {"responseFormat": "json"}}}
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        700,
-        380
-      ],
+      "position": [700, 380],
       "id": "e8fde5ba-16e7-4ed1-8973-ef35d8a791b5",
       "name": "Buscar Evento",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "CAMBIAR",
-          "name": "Supabase API"
-        }
-      }
+      "credentials": {"httpHeaderAuth": {"id": "CAMBIAR", "name": "Supabase API"}}
     },
     {
       "parameters": {
         "operation": "delete",
-        "calendarId": {
-          "__rl": true,
-          "value": "={{ $('Parsear Params').item.json.calendarId }}",
-          "mode": "id"
-        },
+        "calendarId": {"__rl": true, "value": "={{ $('Parsear Params').item.json.calendarId }}", "mode": "id"},
         "eventId": "={{ $('Parsear Params').item.json.eventId }}"
       },
       "type": "n8n-nodes-base.googleCalendar",
       "typeVersion": 1.3,
-      "position": [
-        920,
-        380
-      ],
+      "position": [920, 380],
       "id": "6cfad485-2301-4c3a-ad10-8845f4e13a25",
       "name": "Eliminar GCal",
-      "credentials": {
-        "googleCalendarOAuth2Api": {
-          "id": "CAMBIAR",
-          "name": "Google Calendar"
-        }
-      }
+      "credentials": {"googleCalendarOAuth2Api": {"id": "CAMBIAR", "name": "Google Calendar"}}
     },
     {
       "parameters": {
@@ -379,18 +248,9 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "apikey",
-              "value": "CAMBIAR-SUPABASE-ANON-KEY"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Prefer",
-              "value": "return=representation"
-            }
+            {"name": "apikey", "value": "CAMBIAR-SUPABASE-ANON-KEY"},
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Prefer", "value": "return=representation"}
           ]
         },
         "sendBody": true,
@@ -400,18 +260,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [
-        1140,
-        380
-      ],
+      "position": [1140, 380],
       "id": "2c655ecc-a9df-4deb-ad5c-4a624f43d4f3",
       "name": "Actualizar DB Cancel",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "CAMBIAR",
-          "name": "Supabase API"
-        }
-      }
+      "credentials": {"httpHeaderAuth": {"id": "CAMBIAR", "name": "Supabase API"}}
     },
     {
       "parameters": {
@@ -419,183 +271,55 @@
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1360,
-        380
-      ],
+      "position": [1360, 380],
       "id": "fbcf1922-5346-4b8f-be73-b4ba8f3d2b43",
       "name": "Confirmar Cancel"
-    },
-    {
-      "parameters": {
-        "sendTo": "CAMBIAR-EMAIL-PODOLOGO@gmail.com",
-        "subject": "=📅 Nueva cita: {{ $('Parsear Params').item.json.treatment }} - {{ $('Parsear Params').item.json.patientName }}",
-        "message": "=Se ha agendado una nueva cita:\n\nPaciente: {{ $('Parsear Params').item.json.patientName }}\nTeléfono: {{ $('Parsear Params').item.json.patientPhone }}\nTratamiento: {{ $('Parsear Params').item.json.treatment }}\nFecha: {{ $('Parsear Params').item.json.date }}\nHora: {{ $('Parsear Params').item.json.time }}\n\nLa cita ya fue creada en tu Google Calendar.",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.gmail",
-      "typeVersion": 1,
-      "position": [
-        1360,
-        220
-      ],
-      "id": "bda489d7-b6ba-4009-8600-303e0e887c1c",
-      "name": "Notificar Podologo",
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "CAMBIAR",
-          "name": "Gmail"
-        }
-      }
     }
   ],
   "pinData": {},
   "connections": {
     "Trigger": {
-      "main": [
-        [
-          {
-            "node": "Parsear Params",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Parsear Params", "type": "main", "index": 0}]]
     },
     "Parsear Params": {
-      "main": [
-        [
-          {
-            "node": "Ruta",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Ruta", "type": "main", "index": 0}]]
     },
     "Ruta": {
       "main": [
-        [
-          {
-            "node": "Obtener Eventos",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Validar Datos",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Buscar Evento",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{"node": "Obtener Eventos", "type": "main", "index": 0}],
+        [{"node": "Validar Datos", "type": "main", "index": 0}],
+        [{"node": "Buscar Evento", "type": "main", "index": 0}]
       ]
     },
     "Obtener Eventos": {
-      "main": [
-        [
-          {
-            "node": "Calcular Slots",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Calcular Slots", "type": "main", "index": 0}]]
     },
     "Validar Datos": {
-      "main": [
-        [
-          {
-            "node": "Datos OK?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Datos OK?", "type": "main", "index": 0}]]
     },
     "Datos OK?": {
       "main": [
-        [
-          {
-            "node": "Crear Evento GCal",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{"node": "Crear Evento GCal", "type": "main", "index": 0}],
+        [{"node": "Return Error Datos", "type": "main", "index": 0}]
       ]
     },
     "Crear Evento GCal": {
-      "main": [
-        [
-          {
-            "node": "Guardar Cita DB",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Guardar Cita DB", "type": "main", "index": 0}]]
     },
     "Guardar Cita DB": {
-      "main": [
-        [
-          {
-            "node": "Confirmar Cita",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Notificar Podologo", "type": "main", "index": 0}]]
     },
-    "Confirmar Cita": {
-      "main": [
-        [
-          {
-            "node": "Notificar Podologo",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Notificar Podologo": {
+      "main": [[{"node": "Confirmar Cita", "type": "main", "index": 0}]]
     },
     "Buscar Evento": {
-      "main": [
-        [
-          {
-            "node": "Eliminar GCal",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Eliminar GCal", "type": "main", "index": 0}]]
     },
     "Eliminar GCal": {
-      "main": [
-        [
-          {
-            "node": "Actualizar DB Cancel",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Actualizar DB Cancel", "type": "main", "index": 0}]]
     },
     "Actualizar DB Cancel": {
-      "main": [
-        [
-          {
-            "node": "Confirmar Cancel",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Confirmar Cancel", "type": "main", "index": 0}]]
     }
   },
   "active": false,
@@ -607,10 +331,5 @@
     "templateCredsSetupCompleted": true
   },
   "id": "SUBWF-CALENDARIO-001",
-  "tags": [
-    {
-      "id": "tag-podoia",
-      "name": "PODOIA"
-    }
-  ]
+  "tags": [{"id": "tag-podoia", "name": "PODOIA"}]
 }
